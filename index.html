@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мини-слот</title>
+    <title>Анимированный слот</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -26,7 +26,7 @@
             border: 2px solid #ffd700;
         }
 
-        /* «Окошко» барабана, через которое видно слово */
+        /* «Окошко» барабана, скрывающее всё, что за его пределами */
         .reel-window {
             width: 180px;
             height: 60px;
@@ -34,13 +34,29 @@
             color: #000;
             font-size: 24px;
             font-weight: bold;
+            border-radius: 8px;
+            margin: 20px auto;
+            overflow: hidden; /* Главное: прячем то, что выезжает за границы */
+            position: relative;
+            border: 3px inset #555;
+        }
+
+        /* Лента со всеми символами, которая будет двигаться */
+        .reel-strip {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            /* Плавный переход для анимации */
+            transition: transform 1.5s cubic-bezier(0.1, 0.7, 0.1, 1);
+        }
+
+        /* Каждый отдельный символ на ленте (высота должна быть равна высоте окна — 60px) */
+        .symbol {
+            height: 60px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 8px;
-            margin: 20px auto;
-            overflow: hidden;
-            border: 3px inset #555;
         }
 
         button {
@@ -76,60 +92,77 @@
 <body>
 
     <div class="slot-container">
-        <h2>Простой слот</h2>
+        <h2>Анимированный слот</h2>
         
         <!-- Окно барабана -->
         <div class="reel-window">
-            <span id="reel">СТАРТ</span>
+            <div class="reel-strip" id="reelStrip">
+                <!-- Символы дублируются, чтобы лента была длинной для прокрутки -->
+                <div class="symbol">ЛИМОН</div>
+                <div class="symbol">ВИШНЯ</div>
+                <div class="symbol">СЕМЕРКА</div>
+                <div class="symbol">БАР</div>
+                <div class="symbol">АПЕЛЬСИН</div>
+                <div class="symbol">ЛИМОН</div>
+                <div class="symbol">ВИШНЯ</div>
+                <div class="symbol">СЕМЕРКА</div>
+                <div class="symbol">БАР</div>
+                <div class="symbol">АПЕЛЬСИН</div>
+            </div>
         </div>
 
-        <button id="spinBtn" onclick="startSpin()">КРУТИТЬ</button>
+        <button id="spinBtn" onclick="spinReel()">КРУТИТЬ</button>
         <div id="result"></div>
     </div>
 
     <script>
-        // Возможные «слова» (символы) на барабане
-        const symbols = ["ЛИМОН", "ВИШНЯ", "СЕМЕРКА", "БАР", "АПЕЛЬСИН"];
-        
-        const reel = document.getElementById("reel");
+        const reelStrip = document.getElementById("reelStrip");
         const spinBtn = document.getElementById("spinBtn");
         const resultDiv = document.getElementById("result");
 
-        function startSpin() {
-            // Блокируем кнопку на время вращения
+        const symbolHeight = 60; // Высота одного блока в пикселях
+        const totalSymbols = 5;  // Количество уникальных символов
+
+        function spinResl() { // старт
+            // Функция уже вызывается по клику
+        }
+
+        spinBtn.addEventListener("click", function() {
             spinBtn.disabled = true;
             resultDiv.textContent = "";
 
-            let counter = 0;
-            // Определяем, сколько «шагов» сделает анимация перед остановкой
-            const totalSteps = 20; 
+            // 1. Сбрасываем анимацию в исходную точку
+            reelStrip.style.transition = "none";
+            reelStrip.style.transform = "translateY(0px)";
 
-            // Запускаем быстрое переключение слов (эффект крутящегося барабана)
-            const spinInterval = setInterval(() => {
-                // Выбираем случайное слово из массива
-                const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)];
-                reel.textContent = randomSymbol;
-                counter++;
+            setTimeout(function() {
+                // 2. Выбираем случайный индекс победного символа (от 0 до 4)
+                const winningIndex = Math.floor(Math.random() * totalSymbols);
 
-                // Когда шаги заканчиваются, останавливаем таймер
-                if (counter >= totalSteps) {
-                    clearInterval(spinInterval);
+                // 3. Считаем смещение строго в целых пикселях
+                const extraSpins = 5; 
+                const targetOffset = -((extraSpins * totalSymbols + winningIndex) * symbolHeight);
+
+                // Возвращаем плавный переход и задаем конечную точку через конкатенацию (без шаблонных строк)
+                reelStrip.style.transition = "transform 1.5s cubic-bezier(0.1, 0.7, 0.1, 1)";
+                reelStrip.style.transform = "translateY(" + targetOffset + "px)";
+
+                // 4. Ждем окончания анимации (1.5 секунды)
+                setTimeout(function() {
+                    spinBtn.disabled = false;
                     
-                    // Выбираем финальное слово (в реальном казино это решает ГСЧ)
-                    const finalSymbol = symbols[Math.floor(Math.random() * symbols.length)];
-                    reel.textContent = finalSymbol;
+                    const symbolsList = ["ЛИМОН", "ВИШНЯ", "СЕМЕРКА", "БАР", "АПЕЛЬСИН"];
+                    const finalSymbol = symbolsList[winningIndex];
 
-                    // Проверяем результат (самый простой пример: выпала СЕМЕРКА — победа)
                     if (finalSymbol === "СЕМЕРКА") {
                         resultDiv.textContent = "ДЖЕКПОТ! Вы выиграли!";
                     } else {
-                        resultDiv.textContent = "Попробуйте еще раз!";
+                        resultDiv.textContent = "Выпало: " + finalSymbol + ". Попробуйте еще!";
                     }
-                    // Возвращаем активность кнопке
-                    spinBtn.disabled = false;
-                }
-            }, 75); // Скорость смены слов в миллисекундах (чем меньше, тем быстрее «крутится»)
-        }
+                }, 1500);
+
+            }, 50);
+        });
     </script>
 
 </body>
